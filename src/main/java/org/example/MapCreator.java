@@ -1,12 +1,10 @@
 package org.example;
 
+import Engine2D.*;
 import Engine2D.Alphabet.B;
 import Engine2D.Alphabet.H;
 import Engine2D.Alphabet.V;
-import Engine2D.Circle;
 import Engine2D.Rectangle;
-import Engine2D.Scene;
-import Engine2D.ShapeObject;
 import UnityMath.Vector2;
 
 import javax.swing.*;
@@ -24,17 +22,16 @@ public class MapCreator extends JFrame {
     private Input input;
     private int ball_radius;
     private Ball ball;
-    private boolean game;
-    private int delay;
     private Brick[][] map;
     private int row;
     private int col;
     private int brick_size;
     private Vector2 start;
     private JTextField textField;
-    JMenuBar menuBar;
-    JMenu menu, submenu;
-    JMenuItem menuItem;
+    private JMenuBar menuBar;
+    private JMenu menu;
+    private JMenuItem menuItem;
+    private JFileChooser fileChooser;
     private void start(){
         game();
     }
@@ -49,8 +46,57 @@ public class MapCreator extends JFrame {
                        mouseX < map[i][j].body.get(0).position.x + brick_size &&
                        mouseY > map[i][j].body.get(0).position.y - brick_size &&
                        mouseY < map[i][j].body.get(0).position.y + brick_size){
-                        map[i][j].body.get(0).setColor(Color.RED);
-                        map[i][j].setScore(Integer.parseInt(textField.getText()));
+                        if(map[i][j].getType() == 0) {
+                            map[i][j].body.get(0).setColor(Color.RED);
+                            map[i][j].setColor(Color.RED);
+                            map[i][j].setScore(Integer.parseInt(textField.getText()));
+                            map[i][j].setType(1);
+                        } else if (map[i][j].getType() == 1) {
+                            Vector2 P0 = new Vector2(-brick_size, -brick_size);
+                            Vector2 P1 = new Vector2(brick_size, -brick_size);
+                            Vector2 P2 = new Vector2(brick_size, brick_size);
+                            Vector2 P3 = new Vector2(-brick_size, brick_size);
+                            scene.remove(map[i][j]);
+                            map[i][j] = new Brick("brick", 1, new Triangle(P0, P1, P2, new Vector2(start.x + 2 * brick_size * j, start.y + 2 * brick_size * i), Color.RED), 0,2);
+                            map[i][j].setScore(Integer.parseInt(textField.getText()));
+                            map[i][j].setType(2);
+                            scene.add(map[i][j]);
+                        }else if (map[i][j].getType() == 2) {
+                            Vector2 P0 = new Vector2(-brick_size, -brick_size);
+                            Vector2 P1 = new Vector2(brick_size, -brick_size);
+                            Vector2 P2 = new Vector2(brick_size, brick_size);
+                            Vector2 P3 = new Vector2(-brick_size, brick_size);
+                            scene.remove(map[i][j]);
+                            map[i][j] = new Brick("brick", 1, new Triangle(P1, P2, P3, new Vector2(start.x + 2 * brick_size * j, start.y + 2 * brick_size * i), Color.RED), 0,3);
+                            map[i][j].setScore(Integer.parseInt(textField.getText()));
+                            map[i][j].setType(3);
+                            scene.add(map[i][j]);
+                        }else if (map[i][j].getType() == 3) {
+                            Vector2 P0 = new Vector2(-brick_size, -brick_size);
+                            Vector2 P1 = new Vector2(brick_size, -brick_size);
+                            Vector2 P2 = new Vector2(brick_size, brick_size);
+                            Vector2 P3 = new Vector2(-brick_size, brick_size);
+                            scene.remove(map[i][j]);
+                            map[i][j] = new Brick("brick", 1, new Triangle(P2, P3, P0, new Vector2(start.x + 2 * brick_size * j, start.y + 2 * brick_size * i), Color.RED), 0,4);
+                            map[i][j].setScore(Integer.parseInt(textField.getText()));
+                            map[i][j].setType(4);
+                            scene.add(map[i][j]);
+                        }else if (map[i][j].getType() == 4) {
+                            Vector2 P0 = new Vector2(-brick_size, -brick_size);
+                            Vector2 P1 = new Vector2(brick_size, -brick_size);
+                            Vector2 P2 = new Vector2(brick_size, brick_size);
+                            Vector2 P3 = new Vector2(-brick_size, brick_size);
+                            scene.remove(map[i][j]);
+                            map[i][j] = new Brick("brick", 1, new Triangle(P3, P0, P1, new Vector2(start.x + 2 * brick_size * j, start.y + 2 * brick_size * i), Color.RED), 0,5);
+                            map[i][j].setScore(Integer.parseInt(textField.getText()));
+                            map[i][j].setType(5);
+                            scene.add(map[i][j]);
+                        } else /*if(map[i][j].getType() == 2)*/{
+                            scene.remove(map[i][j]);
+                            map[i][j] = new Brick("brick", 1, new Rectangle(brick_size, brick_size, new Vector2(start.x + 2 * brick_size * j, start.y + 2 * brick_size * i), null), 0);
+                            map[i][j].setType(0);
+                            scene.add(map[i][j]);
+                        }
                     }
                 }
             }
@@ -58,8 +104,6 @@ public class MapCreator extends JFrame {
         }
     }
     private void ini(){
-        delay = 1;
-        game = true;
         WIDTH = 800;
         HEIGHT = 600;
         scene = new Scene(WIDTH, HEIGHT);
@@ -81,11 +125,12 @@ public class MapCreator extends JFrame {
         for(int i = 0; i < row; i++){
             for(int j = 0; j < col; j++){
                 map[i][j] = new Brick("brick", 1, new Rectangle(brick_size, brick_size, new Vector2(start.x + 2 * brick_size * j, start.y + 2 * brick_size * i), null), 0);
+                map[i][j].setType(0);
                 scene.add(map[i][j]);
             }
         }
-
-
+        fileChooser = new JFileChooser();
+        fileChooser.setCurrentDirectory(new File("src/main/resources"));
 
         //Create the menu bar.
         menuBar = new JMenuBar();
@@ -98,52 +143,70 @@ public class MapCreator extends JFrame {
         menuBar.add(menu);
 
         menuItem = new JMenuItem("Save");
+        menuItem.setMnemonic(KeyEvent.VK_S);
+        menuItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                saveMap("src/main/resources/save.txt");
+            }
+        });
+        menu.add(menuItem);
+
+        menuItem = new JMenuItem("Save as");
         menuItem.setMnemonic(KeyEvent.VK_B);
         menuItem.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-                System.out.println("Save");
-                try {
-                    File myObj = new File("src/main/resources/save.txt");
-                    if (myObj.createNewFile()) {
-                        System.out.println("File created: " + myObj.getName());
-                    } else {
-                        System.out.println("File already exists.");
-                    }
-                } catch (IOException e) {
-                    System.out.println("An error occurred.");
-                    e.printStackTrace();
-                }
-
-                try {
-                    FileWriter myWriter = new FileWriter("src/main/resources/save.txt");
-                    StringBuilder res = new StringBuilder();
-                    for(int i = row-1; i >= 0; i--){
-                        for(int j = col-1; j >= 0; j--){
-                            if(map[i][j].body.get(0).color != null){
-                                res.append(String.valueOf(map[i][j].getScore()));
-                            }else {
-                                res.append(String.valueOf(0));
-                            }
-                            res.append(',');
-                        }
-                        if(res.lastIndexOf(",") != -1)
-                            res.deleteCharAt(res.lastIndexOf(","));
-                        res.append("\n");
-                    }
-                    res.deleteCharAt(res.length()-1);
-                    myWriter.write(res.toString());
-
-                    //myWriter.write("Files in Java might be tricky, but it is fun enough!");
-                    myWriter.close();
-                    System.out.println("Successfully wrote to the file.");
-                } catch (IOException e) {
-                    System.out.println("An error occurred.");
-                    e.printStackTrace();
+                int result = fileChooser.showSaveDialog(getParent());
+                if (result == JFileChooser.APPROVE_OPTION) {
+                    // user selects a file
+                    File selectedFile = fileChooser.getSelectedFile();
+                    saveMap(selectedFile.getPath());
                 }
             }
         });
         menu.add(menuItem);
+    }
+    private void saveMap(String fileName){
+        System.out.println("Save");
+        try {
+            File myObj = new File(fileName);
+            if (myObj.createNewFile()) {
+                System.out.println("File created: " + myObj.getName());
+            } else {
+                System.out.println("File already exists.");
+            }
+        } catch (IOException e) {
+            System.out.println("An error occurred.");
+            e.printStackTrace();
+        }
+
+        try {
+            FileWriter myWriter = new FileWriter(fileName);
+            StringBuilder res = new StringBuilder();
+            for(int i = 0; i < row; i++){
+                for(int j = 0; j < col; j++){
+                    res.append("[");
+                    res.append(String.valueOf(map[i][j].getType())).append(",");
+                    res.append(String.valueOf(map[i][j].getColor())).append(",");
+                    res.append(String.valueOf(map[i][j].getScore()));
+                    res.append("]");
+                    res.append(',');
+                }
+                if(res.lastIndexOf(",") != -1)
+                    res.deleteCharAt(res.lastIndexOf(","));
+                res.append("\n");
+            }
+            res.deleteCharAt(res.length()-1);
+            myWriter.write(res.toString());
+
+            //myWriter.write("Files in Java might be tricky, but it is fun enough!");
+            myWriter.close();
+            System.out.println("Successfully wrote to the file.");
+        } catch (IOException e) {
+            System.out.println("An error occurred.");
+            e.printStackTrace();
+        }
     }
 
     MapCreator(){
@@ -164,13 +227,6 @@ public class MapCreator extends JFrame {
         });
         textField = new JTextField("0");
         this.add(textField, BorderLayout.SOUTH);
-        JButton button = new JButton("save");
-        button.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent actionEvent) {
-                System.out.println("Save");
-            }
-        });
         this.setJMenuBar(menuBar);
         this.setVisible(true);
     }

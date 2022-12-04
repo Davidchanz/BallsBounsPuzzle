@@ -4,10 +4,12 @@ import Engine2D.Alphabet.S;
 import Engine2D.Circle;
 import Engine2D.Rectangle;
 import Engine2D.Scene;
+import Engine2D.Triangle;
 import UnityMath.Vector2;
 
 import javax.swing.*;
 import java.awt.*;
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,6 +40,11 @@ public class Main extends JFrame {
     private float acceleration;
     private Map map;
     private Vector2 startPoint;
+    private JFileChooser fileChooser;
+    private long timeStart;
+    private long timeEnd;
+    private long timeFly;
+
     Main(){
         ini();
         this.setSize(new Dimension(WIDTH+10, HEIGHT+45));
@@ -49,6 +56,15 @@ public class Main extends JFrame {
         this.setVisible(true);
     }
     private void ini(){
+        fileChooser = new JFileChooser();
+        fileChooser.setCurrentDirectory(new File("src/main/resources"));
+        String mapPath = "src/main/resources/save.txt";
+        int result = fileChooser.showOpenDialog(this);
+        if (result == JFileChooser.APPROVE_OPTION) {
+            // user selects a file
+            File selectedFile = fileChooser.getSelectedFile();
+            mapPath = selectedFile.getPath();
+        }
         WIDTH = 800;
         HEIGHT = 600;
         startPoint = new Vector2(0,-HEIGHT/2+50);
@@ -74,7 +90,7 @@ public class Main extends JFrame {
         for (Ball ball : balls)
             scene.add(ball);
         brick_size = 15;
-        map = loadMap("src/main/resources/save.txt");
+        map = loadMap(mapPath);
         scene.setBorder(border_size, Color.BLACK);
         int shift = border_size*3 + brick_size/2;
         borderV = new Vector2(-WIDTH/2 + shift, WIDTH/2 - shift);
@@ -122,7 +138,6 @@ public class Main extends JFrame {
         while (game) {
             end_time = System.currentTimeMillis();
             summ_time += end_time - start_time;
-            //delay = 1 + (lvl * 10);TODO lvl UP
             if (delay <= 1) delay = 1;
             if (summ_time >= delay) {
                 tk.sync();
@@ -138,9 +153,30 @@ public class Main extends JFrame {
     }
     public void game(){
         if(fly){
+            timeFly++;
+            if(timeFly - timeStart > 1000 && acceleration <= 10.0f){
+                timeStart = timeFly;
+                acceleration += 0.5;
+                for(int i = 0; i < ball_count; i++){
+                    if(balls[i].fly) {
+                        balls[i].dir.mul(acceleration);
+                    }
+                }
+                System.out.println(acceleration);
+            }
             int j = 0;
             int count = 0;
             while(fl) {
+                timeFly++;
+                if(timeFly - timeStart > 1000 && acceleration <= 10.0f){
+                    timeStart = timeFly;
+                    acceleration += 0.5;
+                    for(int i = 0; i < ball_count; i++){
+                        if(balls[i].fly) {
+                            balls[i].dir.mul(acceleration);
+                        }
+                    }
+                }
                 for (int i = 0; i < j; i++) {
                     if(balls[i].fly) {
                         balls[i].move(new Vector2(balls[i].dir));
@@ -157,7 +193,7 @@ public class Main extends JFrame {
                     throw new RuntimeException(e);
                 }
                 count++;
-                if(count >= ball_radius * 2){
+                if(count >= (ball_radius * 2) / acceleration){
                     j++;
                     count = 0;
                 }
@@ -179,6 +215,7 @@ public class Main extends JFrame {
                     Vector2 offset = new Vector2(startPoint).sub(ball.position);
                     ball.move(offset);
                 }
+                timeEnd = System.currentTimeMillis();
             }
         }else {
             if(Input.isClicked()){
@@ -191,30 +228,40 @@ public class Main extends JFrame {
                     ball.fly = true;
                 }
                 fly = true;
+                timeStart = System.currentTimeMillis();
+                timeFly = timeStart;
+                acceleration = 1.0f;
             }
         }
     }
-    private boolean isCollision(Ball ball){
-        if(ball.getPosition().x < borderV.x) {
-            float ang = ball.dir.angleDeg();
-            ball.dir.rotateDeg(-2 * (ang - 90));
-            return false;
-        }
-        else if(ball.getPosition().x > borderV.y){
-            float ang = ball.dir.angleDeg();
-            ball.dir.rotateDeg(2 * (90 - ang));
-            return false;
-        }
-        else if(ball.getPosition().y < borderH.x){
-            float ang = ball.dir.angleDeg();
-            ball.dir.rotateDeg(2 * -ang);
-            ball.fly = false;
+    private boolean isCollision(Ball origBall){
+        Vector2 ballPosition = new Vector2(origBall.getPosition());
+        ballPosition.add(origBall.dir);
+        if(isErrorCollision(origBall)){
+            origBall.fly = false;
             countFlyBalls--;
             return countFlyBalls <= 0;
         }
-        else if(ball.getPosition().y > borderH.y){
-            float ang = ball.dir.angleDeg();
-            ball.dir.rotateDeg(-2 * ang);
+        else if(ballPosition.x < borderV.x) {
+            float ang = origBall.dir.angleDeg();
+            origBall.dir.rotateDeg(-2 * (ang - 90));
+            return false;
+        }
+        else if(ballPosition.x > borderV.y){
+            float ang = origBall.dir.angleDeg();
+            origBall.dir.rotateDeg(2 * (90 - ang));
+            return false;
+        }
+        else if(ballPosition.y < borderH.x){
+            float ang = origBall.dir.angleDeg();
+            origBall.dir.rotateDeg(2 * -ang);
+            origBall.fly = false;
+            countFlyBalls--;
+            return countFlyBalls <= 0;
+        }
+        else if(ballPosition.y > borderH.y){
+            float ang = origBall.dir.angleDeg();
+            origBall.dir.rotateDeg(-2 * ang);
             return false;
         }/*else if(ball.getPosition().x <= cart.getPosition().x + cart_width &&
                 ball.getPosition().x >= cart.getPosition().x - cart_width &&
@@ -224,58 +271,202 @@ public class Main extends JFrame {
             dir.rotateDeg(2 * -ang);
             return false;
         }*/
-        BrickCollision(ball);
+        BrickCollision(origBall);
+        return false;
+    }
+    public boolean isErrorCollision(Ball origBall){
+        Vector2 ballPosition = new Vector2(origBall.getPosition());
+        ballPosition.add(origBall.dir);
+        if(ballPosition.x < borderV.x) {
+            if(ballPosition.x < -(WIDTH + ball_radius * 4))
+                return true;
+        }
+        else if(ballPosition.x > borderV.y){
+            if(ballPosition.x > WIDTH + ball_radius * 4)
+                return true;
+        }
+        else if(ballPosition.y < borderH.x){
+            if(ballPosition.y < -(HEIGHT + ball_radius * 4))
+                return true;
+        }
+        else if(ballPosition.y > borderH.y){
+            if(ballPosition.y > HEIGHT + ball_radius * 4)
+                return true;
+        }
+        return false;
+    }
+    public ArrayList<Integer> Interpolate(float i0, float d0, float i1, float d1) {
+        ArrayList<Integer> values = new ArrayList<>();
+        if (i0 == i1) {
+            values.add((int)d0);
+            return values;
+        } else {
+            float a = (d1 - d0) / (i1 - i0);
+            float d = d0;
+
+            for(int i = (int)i0; i <= (int)i1; ++i) {
+                values.add((int)d);
+                d += a;
+            }
+            return values;
+        }
+    }
+    public ArrayList<Vector2> Brezenheim(Vector2 v1, Vector2 v2) {
+        ArrayList<Vector2> checkList = new ArrayList<>();
+        float dx = v2.x - v1.x;
+        float dy = v2.y - v1.y;
+        Vector2 tmp;
+        int scanlineY;
+        ArrayList<Integer> ys;
+        if (Math.abs(dx) > Math.abs(dy)) {
+            if (v1.x > v2.x) {
+                tmp = v1;
+                v1 = v2;
+                v2 = tmp;
+            }
+
+            ys = this.Interpolate(v1.x, v1.y, v2.x, v2.y);
+
+            for(scanlineY = (int)v1.x; (float)scanlineY <= v2.x; ++scanlineY) {
+                checkList.add(new Vector2(scanlineY, ys.get(scanlineY - (int)v1.x)));
+            }
+        } else {
+            if (v1.y > v2.y) {
+                tmp = v1;
+                v1 = v2;
+                v2 = tmp;
+            }
+
+            ys = this.Interpolate(v1.y, v1.x, v2.y, v2.x);
+
+            for(scanlineY = (int)v1.y; (float)scanlineY <= v2.y; ++scanlineY) {
+                checkList.add(new Vector2(ys.get(scanlineY - (int)v1.y), scanlineY));
+            }
+        }
+        return checkList;
+    }
+    public boolean sideCollision(ArrayList<Vector2> checkList, Ball origBall) {
+        Vector2 ballPosition = new Vector2(origBall.getPosition());
+        ballPosition.add(origBall.dir);
+        for (var side : checkList) {
+            float x = side.x;
+            float y = side.y;
+            float range = (float) Math.sqrt((Math.abs(x - ballPosition.x) * Math.abs(x - ballPosition.x)) + (Math.abs(y - ballPosition.y) * Math.abs(y - ballPosition.y)));
+            if (range <= ball_radius) {
+                return true;
+            }
+        }
         return false;
     }
     public void BrickCollision(Ball ball){
         var bricks_old = bricks.toArray(new Brick[0]);
         int brick_count_old = brick_count;
+        boolean collision = false;
         for(int i = 0; i < brick_count_old; i++){
             Brick brick = bricks_old[i];
-            float x = brick.position.x;
-            float y = brick.position.y;
-            float range = (float)Math.sqrt((Math.abs(x - ball.getPosition().x)*Math.abs(x - ball.getPosition().x))+(Math.abs(y - ball.getPosition().y)*Math.abs(y - ball.getPosition().y)));
-            if(range <= ball_radius + brick_size){
-                double dx = Math.abs(x - ball.getPosition().x);
-                double dy = Math.abs(y - ball.getPosition().y);
-                if(ball.getPosition().x < brick.position.x && dx > dy) {
-                    float ang = ball.dir.angleDeg();
-                    ball.dir.rotateDeg(-2 * (ang - 90));
+            switch (brick.getType()){
+                case 1 -> {
+                    Rectangle rectangle = (Rectangle) brick.body.get(0);
+                    if(sideCollision(Brezenheim(new Vector2(rectangle.Bot.P0).add(brick.position), new Vector2(rectangle.Bot.P1).add(brick.position)), ball)){//right
+                        float ang = ball.dir.angleDeg();
+                        ball.dir.rotateDeg(2 * (90 - ang));
+                        collision = true;
+                    }else if (sideCollision(Brezenheim(new Vector2(rectangle.Bot.P1).add(brick.position), new Vector2(rectangle.Bot.P2).add(brick.position)), ball)) {//top
+                        float ang = ball.dir.angleDeg();
+                        ball.dir.rotateDeg(-2 * ang);
+                        collision = true;
+                    }else if (sideCollision(Brezenheim(new Vector2(rectangle.Top.P0).add(brick.position), new Vector2(rectangle.Top.P1).add(brick.position)), ball)) {//bot
+                        float ang = ball.dir.angleDeg();
+                        ball.dir.rotateDeg(2 * -ang);
+                        collision = true;
+                    }else if (sideCollision(Brezenheim(new Vector2(rectangle.Top.P1).add(brick.position), new Vector2(rectangle.Top.P2).add(brick.position)), ball)) {//left
+                        float ang = ball.dir.angleDeg();
+                        ball.dir.rotateDeg(-2 * (ang - 90));
+                        collision = true;
+                    }
                 }
-                else if(ball.getPosition().x > brick.position.x && dx > dy){
-                    float ang = ball.dir.angleDeg();
-                    ball.dir.rotateDeg(2 * (90 - ang));
+                case 2 -> {
+                    Triangle triangle = (Triangle) brick.body.get(0);
+                    if(sideCollision(Brezenheim(new Vector2(triangle.P0).add(brick.position), new Vector2(triangle.P1).add(brick.position)), ball)){//bot
+                        float ang = ball.dir.angleDeg();
+                        ball.dir.rotateDeg(2 * -ang);
+                        collision = true;
+                    }else if (sideCollision(Brezenheim(new Vector2(triangle.P1).add(brick.position), new Vector2(triangle.P2).add(brick.position)), ball)) {//right
+                        float ang = ball.dir.angleDeg();
+                        ball.dir.rotateDeg(2 * (90 - ang));
+                        collision = true;
+                    }else if (sideCollision(Brezenheim(new Vector2(triangle.P0).add(brick.position), new Vector2(triangle.P2).add(brick.position)), ball)) {//diag
+                        Vector2 perp = new Vector2(1,1).rotate90(1);
+                        float ang = ball.dir.angleDeg(perp);
+                        ball.dir.rotateDeg(2 * (90 - ang));
+                        collision = true;
+                    }
                 }
-                else if(ball.getPosition().y < brick.position.y && dx < dy){
-                    float ang = ball.dir.angleDeg();
-                    ball.dir.rotateDeg(2 * -ang);
+                case 3 -> {
+                    Triangle triangle = (Triangle) brick.body.get(0);
+                    if(sideCollision(Brezenheim(new Vector2(triangle.P0).add(brick.position), new Vector2(triangle.P1).add(brick.position)), ball)){//right
+                        float ang = ball.dir.angleDeg();
+                        ball.dir.rotateDeg(2 * (90 - ang));
+                        collision = true;
+                    }else if (sideCollision(Brezenheim(new Vector2(triangle.P1).add(brick.position), new Vector2(triangle.P2).add(brick.position)), ball)) {//top
+                        float ang = ball.dir.angleDeg();
+                        ball.dir.rotateDeg(-2 * ang);
+                        collision = true;
+                    }else if (sideCollision(Brezenheim(new Vector2(triangle.P0).add(brick.position), new Vector2(triangle.P2).add(brick.position)), ball)) {//diag
+                        Vector2 perp = new Vector2(-1,1).rotate90(1);
+                        float ang = ball.dir.angleDeg(perp);
+                        ball.dir.rotateDeg(2 * (90 - ang));
+                        collision = true;
+                    }
                 }
-                else if(ball.getPosition().y > brick.position.y && dx < dy){
-                    float ang = ball.dir.angleDeg();
-                    ball.dir.rotateDeg(-2 * ang);
+                case 4 -> {
+                    Triangle triangle = (Triangle) brick.body.get(0);
+                    if(sideCollision(Brezenheim(new Vector2(triangle.P0).add(brick.position), new Vector2(triangle.P1).add(brick.position)), ball)){//top
+                        float ang = ball.dir.angleDeg();
+                        ball.dir.rotateDeg(-2 * ang);
+                        collision = true;
+                    }else if (sideCollision(Brezenheim(new Vector2(triangle.P1).add(brick.position), new Vector2(triangle.P2).add(brick.position)), ball)) {//left
+                        float ang = ball.dir.angleDeg();
+                        ball.dir.rotateDeg(-2 * (ang - 90));
+                        collision = true;
+                    }else if (sideCollision(Brezenheim(new Vector2(triangle.P0).add(brick.position), new Vector2(triangle.P2).add(brick.position)), ball)) {//diag
+                        Vector2 perp = new Vector2(1,1).rotate90(-1);
+                        float ang = ball.dir.angleDeg(perp);
+                        ball.dir.rotateDeg(2 * (90 - ang));
+                        collision = true;
+                    }
                 }
-                else if(dx == dy){
-                    System.out.println("Shot in angle!");//TODO shot in angle
+                case 5 -> {
+                    Triangle triangle = (Triangle) brick.body.get(0);
+                    if(sideCollision(Brezenheim(new Vector2(triangle.P0).add(brick.position), new Vector2(triangle.P1).add(brick.position)), ball)){//left
+                        float ang = ball.dir.angleDeg();
+                        ball.dir.rotateDeg(-2 * (ang - 90));
+                        collision = true;
+                    }else if (sideCollision(Brezenheim(new Vector2(triangle.P1).add(brick.position), new Vector2(triangle.P2).add(brick.position)), ball)) {//bot
+                        float ang = ball.dir.angleDeg();
+                        ball.dir.rotateDeg(-2 * ang);
+                        collision = true;
+                    }else if (sideCollision(Brezenheim(new Vector2(triangle.P0).add(brick.position), new Vector2(triangle.P2).add(brick.position)), ball)) {//diag
+                        Vector2 perp = new Vector2(-1,1).rotate90(-1);
+                        float ang = ball.dir.angleDeg(perp);
+                        ball.dir.rotateDeg(2 * (90 - ang));
+                        collision = true;
+                    }
                 }
-                else {
-                    System.out.println("Error!");
+                default -> {
+                    System.err.println("Unknown brick type!");
                 }
+            }
+            if(collision) {
                 score++;
                 brick.hit();
-                if(brick.getScore() <= 0) {
+                if (brick.getScore() <= 0) {
                     brick_count -= 1;
                     scene.remove(brick);
                     bricks.remove(brick);
-                    return;
                 }
-
-                ////////////////
-
                 Vector2 tmp = new Vector2(brick.position).sub(ball.getPosition()).nor().mul(-1);
                 ball.move(tmp);
-
-                ///////////////
-
                 return;
             }
         }
