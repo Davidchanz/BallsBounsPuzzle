@@ -2,6 +2,7 @@ package org.example;
 
 import Engine2D.*;
 import Engine2D.Alphabet.B;
+import Engine2D.Alphabet.C;
 import Engine2D.Alphabet.H;
 import Engine2D.Alphabet.V;
 import Engine2D.Rectangle;
@@ -32,6 +33,8 @@ public class MapCreator extends JFrame {
     private JMenu menu;
     private JMenuItem menuItem;
     private JFileChooser fileChooser;
+    private Color[] palette;
+    private int MAX_SCORE;
     private void start(){
         game();
     }
@@ -46,10 +49,11 @@ public class MapCreator extends JFrame {
                        mouseX < map[i][j].body.get(0).position.x + brick_size &&
                        mouseY > map[i][j].body.get(0).position.y - brick_size &&
                        mouseY < map[i][j].body.get(0).position.y + brick_size){
+                        double score = Integer.parseInt(textField.getText());
                         if(map[i][j].getType() == 0) {
-                            map[i][j].body.get(0).setColor(Color.RED);
-                            map[i][j].setColor(Color.RED);
-                            map[i][j].setScore(Integer.parseInt(textField.getText()));
+                            map[i][j].setScore((int)score);
+                            map[i][j].body.get(0).setColor(palette[(int)((score/MAX_SCORE) * palette.length)]);
+                            map[i][j].setColor(palette[(int)((score/MAX_SCORE) * palette.length)]);
                             map[i][j].setType(1);
                         } else if (map[i][j].getType() == 1) {
                             Vector2 P0 = new Vector2(-brick_size, -brick_size);
@@ -57,7 +61,7 @@ public class MapCreator extends JFrame {
                             Vector2 P2 = new Vector2(brick_size, brick_size);
                             Vector2 P3 = new Vector2(-brick_size, brick_size);
                             scene.remove(map[i][j]);
-                            map[i][j] = new Brick("brick", 1, new Triangle(P0, P1, P2, new Vector2(start.x + 2 * brick_size * j, start.y + 2 * brick_size * i), Color.RED), 0,2);
+                            map[i][j] = new Brick("brick", 1, new Triangle(P0, P1, P2, new Vector2(start.x + 2 * brick_size * j, start.y + 2 * brick_size * i), palette[(int)((score/MAX_SCORE) * palette.length)]), 0,2);
                             map[i][j].setScore(Integer.parseInt(textField.getText()));
                             map[i][j].setType(2);
                             scene.add(map[i][j]);
@@ -67,7 +71,7 @@ public class MapCreator extends JFrame {
                             Vector2 P2 = new Vector2(brick_size, brick_size);
                             Vector2 P3 = new Vector2(-brick_size, brick_size);
                             scene.remove(map[i][j]);
-                            map[i][j] = new Brick("brick", 1, new Triangle(P1, P2, P3, new Vector2(start.x + 2 * brick_size * j, start.y + 2 * brick_size * i), Color.RED), 0,3);
+                            map[i][j] = new Brick("brick", 1, new Triangle(P1, P2, P3, new Vector2(start.x + 2 * brick_size * j, start.y + 2 * brick_size * i), palette[(int)((score/MAX_SCORE) * palette.length)]), 0,3);
                             map[i][j].setScore(Integer.parseInt(textField.getText()));
                             map[i][j].setType(3);
                             scene.add(map[i][j]);
@@ -77,7 +81,7 @@ public class MapCreator extends JFrame {
                             Vector2 P2 = new Vector2(brick_size, brick_size);
                             Vector2 P3 = new Vector2(-brick_size, brick_size);
                             scene.remove(map[i][j]);
-                            map[i][j] = new Brick("brick", 1, new Triangle(P2, P3, P0, new Vector2(start.x + 2 * brick_size * j, start.y + 2 * brick_size * i), Color.RED), 0,4);
+                            map[i][j] = new Brick("brick", 1, new Triangle(P2, P3, P0, new Vector2(start.x + 2 * brick_size * j, start.y + 2 * brick_size * i), palette[(int)((score/MAX_SCORE) * palette.length)]), 0,4);
                             map[i][j].setScore(Integer.parseInt(textField.getText()));
                             map[i][j].setType(4);
                             scene.add(map[i][j]);
@@ -87,7 +91,7 @@ public class MapCreator extends JFrame {
                             Vector2 P2 = new Vector2(brick_size, brick_size);
                             Vector2 P3 = new Vector2(-brick_size, brick_size);
                             scene.remove(map[i][j]);
-                            map[i][j] = new Brick("brick", 1, new Triangle(P3, P0, P1, new Vector2(start.x + 2 * brick_size * j, start.y + 2 * brick_size * i), Color.RED), 0,5);
+                            map[i][j] = new Brick("brick", 1, new Triangle(P3, P0, P1, new Vector2(start.x + 2 * brick_size * j, start.y + 2 * brick_size * i), palette[(int)((score/MAX_SCORE) * palette.length)]), 0,5);
                             map[i][j].setScore(Integer.parseInt(textField.getText()));
                             map[i][j].setType(5);
                             scene.add(map[i][j]);
@@ -104,6 +108,34 @@ public class MapCreator extends JFrame {
         }
     }
     private void ini(){
+        MAX_SCORE = 100;
+        palette = new Color[10];
+        /*int offsetR = 0;
+        int offsetG = 0;
+        int offsetB = 0;
+        int tmpR = 1;
+        int tmpG = 1;
+        for (int i = 0; i < 10; i++){
+            if(i % 1 == 0) offsetR = 1;
+            //if(i % 3 == 0) offsetG = 1;
+            //if(i % 1 == 0) offsetB = 1;
+            if(i >= 15/2) tmpR = 0;
+            if(tmpR == 1) tmpG = 0;
+            else tmpG = 1;
+            //palette[i] = new Color((100 + (15 - tmp*i)) + i*15*offsetR,i*15*offsetG,(40 + (15 - i)) + i*15*offsetB);
+            palette[i] = new Color((100 + (15 - tmpR*i)) + i*15*offsetR,(100 + (15 - tmpG*i)) + i*15*offsetG,0);
+        }*/
+        palette[0] = Color.RED;
+        palette[1] = Color.MAGENTA;
+        palette[2] = Color.ORANGE;
+        palette[3] = Color.BLUE;
+        palette[4] = Color.CYAN;
+        palette[5] = Color.GREEN;
+        palette[6] = Color.PINK;
+        palette[7] = Color.YELLOW;
+        palette[8] = Color.WHITE;
+        palette[9] = Color.LIGHT_GRAY;
+
         WIDTH = 800;
         HEIGHT = 600;
         scene = new Scene(WIDTH, HEIGHT);
