@@ -1,10 +1,8 @@
 package org.example;
 
+import Engine2D.*;
 import Engine2D.Alphabet.S;
-import Engine2D.Circle;
 import Engine2D.Rectangle;
-import Engine2D.Scene;
-import Engine2D.Triangle;
 import UnityMath.Vector2;
 
 import javax.swing.*;
@@ -153,17 +151,6 @@ public class Main extends JFrame {
     }
     public void game(){
         if(fly){
-            timeFly++;
-            if(timeFly - timeStart > 1000 && acceleration <= 10.0f){
-                timeStart = timeFly;
-                acceleration += 0.5;
-                for(int i = 0; i < ball_count; i++){
-                    if(balls[i].fly) {
-                        balls[i].dir.mul(acceleration);
-                    }
-                }
-                System.out.println(acceleration);
-            }
             int j = 0;
             int count = 0;
             while(fl) {
@@ -193,14 +180,23 @@ public class Main extends JFrame {
                     throw new RuntimeException(e);
                 }
                 count++;
-                if(count >= (ball_radius * 2) / acceleration){
+                if(count >= ((ball_radius * 2) / acceleration)){
                     j++;
                     count = 0;
                 }
                 if(j > ball_count)
                     fl = false;
             }
-
+            timeFly++;
+            if(timeFly - timeStart > 1000 && acceleration <= 10.0f){
+                timeStart = timeFly;
+                acceleration += 0.5;
+                for(int i = 0; i < ball_count; i++){
+                    if(balls[i].fly) {
+                        balls[i].dir.mul(acceleration);
+                    }
+                }
+            }
             for(int i = 0; i < ball_count; i++){
                 if(balls[i].fly) {
                     balls[i].move(balls[i].dir);
@@ -219,6 +215,7 @@ public class Main extends JFrame {
             }
         }else {
             if(Input.isClicked()){
+                acceleration = 1.0f;
                 countFlyBalls = ball_count;
                 int mouseX = Input.getMouseX();
                 int mouseY = Input.getMouseY();
@@ -230,7 +227,6 @@ public class Main extends JFrame {
                 fly = true;
                 timeStart = System.currentTimeMillis();
                 timeFly = timeStart;
-                acceleration = 1.0f;
             }
         }
     }
@@ -353,6 +349,10 @@ public class Main extends JFrame {
             float y = side.y;
             float range = (float) Math.sqrt((Math.abs(x - ballPosition.x) * Math.abs(x - ballPosition.x)) + (Math.abs(y - ballPosition.y) * Math.abs(y - ballPosition.y)));
             if (range <= ball_radius) {
+                if(side == checkList.get(0) || side == checkList.get(checkList.size()-1)){
+                    System.out.println("isCorner!");
+                    origBall.dir.rotateDeg(180);
+                }
                 return true;
             }
         }
